@@ -6,8 +6,9 @@ python-dotenv==1.0.0
 requests==2.31.0
 opencv-python-headless==4.8.1.78
 numpy==1.26.3
-scipy==1.11.4
-scikit-image==0.22.0
+# Removed heavy build deps (scipy, scikit-image) to avoid source builds
+# If you need scientific packages in production, use a Python runtime with
+# prebuilt wheels (e.g., python-3.11) or install via conda. See README.
 email-validator==2.1.0
 Werkzeug==3.0.1
 supabase==2.4.0
