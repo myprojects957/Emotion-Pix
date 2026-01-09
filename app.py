@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 from email_validator import validate_email, EmailNotValidError
-# from supabase import SupabaseException
+from supabase import SupabaseException
 from gotrue.errors import AuthApiError
 import time
 from dotenv import load_dotenv
@@ -25,20 +25,57 @@ app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
 
 USER_DATA_FILE = 'users.json'
-supabase_client = supabase.create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
+
+# Initialize Supabase client with error handling
+supabase_client = None
+try:
+    # Check if config values exist and are not empty
+    supabase_url = getattr(config, 'SUPABASE_URL', None) or os.getenv('SUPABASE_URL')
+    supabase_key = getattr(config, 'SUPABASE_KEY', None) or os.getenv('SUPABASE_KEY')
+    
+    # Validate that both URL and KEY are present and not empty
+    if supabase_url and supabase_key:
+        supabase_url = str(supabase_url).strip()
+        supabase_key = str(supabase_key).strip()
+        
+        if supabase_url and supabase_key and len(supabase_url) > 0 and len(supabase_key) > 0:
+            try:
+                supabase_client = supabase.create_client(supabase_url, supabase_key)
+                print("Supabase client initialized successfully")
+            except (SupabaseException, ValueError, Exception) as client_error:
+                print(f"Warning: Could not create Supabase client: {client_error}")
+                supabase_client = None
+        else:
+            print("Warning: SUPABASE_URL or SUPABASE_KEY is empty. Authentication features will be disabled.")
+    else:
+        print("Warning: SUPABASE_URL or SUPABASE_KEY not set. Authentication features will be disabled.")
+except Exception as e:
+    print(f"Warning: Error during Supabase initialization: {e}")
+    print("Authentication features will be disabled.")
+    supabase_client = None
 
 # Initialize emotion detection model (using a simple CNN instead of FER)
+emotion_model = None
 try:
     # Using pre-trained emotion detection model from TensorFlow
     import urllib.request
     model_url = "https://github.com/atulappl/Emotion-detection/raw/master/emotion_model.h5"
-    model_path = "/tmp/emotion_model.h5"
+    # Use a writable directory that exists on Render
+    model_path = os.path.join(os.getcwd(), "emotion_model.h5")
     
-    # Download model if not exists
+    # Download model if not exists (with timeout to prevent blocking)
     if not os.path.exists(model_path):
-        urllib.request.urlretrieve(model_url, model_path)
+        try:
+            urllib.request.urlretrieve(model_url, model_path)
+        except Exception as download_error:
+            print(f"Warning: Could not download emotion model: {download_error}")
+            model_path = None
     
-    emotion_model = load_model(model_path)
+    if model_path and os.path.exists(model_path):
+        emotion_model = load_model(model_path)
+        print("Emotion detection model loaded successfully")
+    else:
+        print("Warning: Emotion model file not available. Using fallback emotion detection.")
 except Exception as e:
     print(f"Warning: Could not load emotion model: {e}")
     emotion_model = None
@@ -166,6 +203,10 @@ def validate_user(email, password):
 
 @app.route('/resend_confirmation', methods=['POST'])
 def resend_confirmation():
+    if not supabase_client:
+        flash("Authentication service is not available. Please contact support.", "danger")
+        return redirect(url_for('login'))
+    
     email = request.form.get('email', '').strip()
     if not email:
         flash("Email is required.", "danger")
@@ -176,8 +217,8 @@ def resend_confirmation():
             flash("Error sending confirmation email: " + response["error"]["message"], "danger")
         else:
             flash("A new confirmation email has been sent. Please check your inbox.", "success")
-    except supabase.exceptions.SupabaseAPIError as e:
-        flash(f"Error: {e.message}", "danger")
+    except Exception as e:
+        flash(f"Error: {str(e)}", "danger")
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -207,17 +248,21 @@ def register():
     return render_template('register.html')
 
 def safe_supabase_sign_up(email, password):
+    if not supabase_client:
+        return {"error": {"message": "Authentication service is not available. Please contact support."}}
+    
     retries = 3
     for attempt in range(retries):
         try:
             return supabase_client.auth.sign_up({"email": email, "password": password})
-        except SupabaseException as e:
+        except (SupabaseException, Exception) as e:
             if attempt < retries - 1:
                 time.sleep(2)
             else:
                 print(f"Supabase Error after {retries} attempts: {str(e)}")
+                return {"error": {"message": str(e)}}
     print('Failed to connect to the server after retries.')
-    return None
+    return {"error": {"message": "Failed to connect to the server. Please try again later."}}
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -230,6 +275,10 @@ def login():
             return render_template('login.html')
 
         # Proceed to authenticate; don't display password requirement details on login
+
+        if not supabase_client:
+            flash("Authentication service is not available. Please contact support.", "danger")
+            return render_template('login.html')
 
         try:
             response = supabase_client.auth.sign_in_with_password({
