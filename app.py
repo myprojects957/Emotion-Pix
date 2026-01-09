@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 from email_validator import validate_email, EmailNotValidError
-from supabase import SupabaseException
+# SupabaseException is not available in supabase 2.4.0, using generic Exception instead
 from gotrue.errors import AuthApiError
 import time
 from dotenv import load_dotenv
@@ -42,7 +42,7 @@ try:
             try:
                 supabase_client = supabase.create_client(supabase_url, supabase_key)
                 print("Supabase client initialized successfully")
-            except (SupabaseException, ValueError, Exception) as client_error:
+            except (ValueError, Exception) as client_error:
                 print(f"Warning: Could not create Supabase client: {client_error}")
                 supabase_client = None
         else:
@@ -255,7 +255,7 @@ def safe_supabase_sign_up(email, password):
     for attempt in range(retries):
         try:
             return supabase_client.auth.sign_up({"email": email, "password": password})
-        except (SupabaseException, Exception) as e:
+        except Exception as e:
             if attempt < retries - 1:
                 time.sleep(2)
             else:
