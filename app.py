@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
+import re
 import json
 import os
 from flask_session import Session
@@ -117,6 +118,21 @@ def is_valid_email(email):
     except EmailNotValidError:
         return False
 
+
+def is_valid_password(password: str) -> bool:
+    """
+    Validate password with regex:
+    - Minimum 8 characters
+    - At least one lowercase letter
+    - At least one uppercase letter
+    - At least one digit
+    - At least one special character
+    """
+    if not password:
+        return False
+    pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$'
+    return re.match(pattern, password) is not None
+
 def create_user(email, password):
     users = load_users()
     if email in users:
@@ -158,6 +174,10 @@ def register():
             flash('Invalid email format. Please enter a valid email.', 'danger')
             return render_template('register.html')
 
+        if not is_valid_password(password):
+            flash('Password must be at least 8 characters, include uppercase, lowercase, a number and a special character.', 'danger')
+            return render_template('register.html')
+
         response = safe_supabase_sign_up(email, password)
         
         if response and "error" in response:
@@ -189,6 +209,11 @@ def login():
 
         if not email or not password:
             flash("Email and password are required!", "danger")
+            return render_template('login.html')
+
+        # Enforce password format on login to reduce accidental weak passwords
+        if not is_valid_password(password):
+            flash('Invalid password format. Please ensure it has 8+ chars, upper/lowercase, a number and a special character.', 'danger')
             return render_template('login.html')
 
         try:
