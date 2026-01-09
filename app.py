@@ -30,8 +30,8 @@ USER_DATA_FILE = 'users.json'
 supabase_client = None
 try:
     # Check if config values exist and are not empty
-    supabase_url = getattr(config, 'SUPABASE_URL', None) or os.getenv('SUPABASE_URL')
-    supabase_key = getattr(config, 'SUPABASE_KEY', None) or os.getenv('SUPABASE_KEY')
+    supabase_url = os.getenv('SUPABASE_URL')
+    supabase_key = os.getenv('SUPABASE_KEY')
     
     # Validate that both URL and KEY are present and not empty
     if supabase_url and supabase_key:
