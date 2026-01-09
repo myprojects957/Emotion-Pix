@@ -1,17 +1,13 @@
-setuptools==69.0.3
-wheel==0.42.0
+setuptools==65.5.0
+wheel==0.41.0
 Flask==3.0.0
 Flask-Session==0.5.0
 python-dotenv==1.0.0
 requests==2.31.0
 opencv-python-headless==4.8.1.78
-numpy==1.26.3
-# Removed heavy build deps (scipy, scikit-image) to avoid source builds
-# If you need scientific packages in production, use a Python runtime with
-# prebuilt wheels (e.g., python-3.11) or install via conda. See README.
+numpy>=1.26.2,<2.0
 email-validator==2.1.0
 Werkzeug==3.0.1
-supabase==2.4.0
-tensorflow==2.14.0
+supabase==2.3.0
 Pillow==10.1.0
 gunicorn==21.2.0
