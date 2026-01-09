@@ -8,79 +8,219 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background-image: url("{{ url_for('static', filename='loginpageback.jpg') }}"); 
             background-size: cover; 
             background-position: center; 
-            background-repeat: no-repeat; 
-            height: 100vh; 
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh; 
             display: flex;
             justify-content: center; 
-            align-items: center; 
+            align-items: center;
+            padding: 20px;
         }
         
-                .container {
-                    max-width: 450px;
-                    padding: 40px;
-                    border-radius: 10px;
-                    background: rgba(8, 8, 8, 0.755); /* Adjust the last value (0.0 - 1.0) to change transparency */
-                    box-shadow: 0 10px 30px rgba(239, 234, 234, 0.3);
-                }
+        .container {
+            max-width: 450px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 10px;
+            background: rgba(8, 8, 8, 0.755);
+            box-shadow: 0 10px 30px rgba(239, 234, 234, 0.3);
+        }
         
-                h2 {
-                    text-align: center;
-                    font-weight: bold;
-                    margin-bottom: 30px;
-                    font-size: 2rem;
-                    color: #278dd5;
-                }
-                .form-group label {
-                    font-size: 1.1rem;
-                    color: #ddd;
-                }
-                .form-control {
-                 background: transparent; 
-                 border: 2px solid rgba(255, 255, 255, 0.5); 
-                 color: white; 
-                 font-size: 1rem;
-                 padding: 12px;
-                 border-radius: 8px;
+        h2 {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            color: #278dd5;
+        }
+
+        .form-group label {
+            font-size: 1.1rem;
+            color: #ddd;
+        }
+
+        .form-control {
+            background: transparent; 
+            border: 2px solid rgba(255, 255, 255, 0.5); 
+            color: white; 
+            font-size: 1rem;
+            padding: 12px;
+            border-radius: 8px;
         }
         
         .form-control::placeholder {
             color: rgba(255, 255, 255, 0.7); 
         }
         
-                .form-control:focus {
-                    border-color: #278dd5;
-                    box-shadow: 0 0 5px rgba(150, 147, 133, 0.5);
-                }
-                .btn-block {
-                    padding: 14px;
-                    font-size: 1.1rem;
-                    background-color: #278dd5;
-                    border: none;
-                    border-radius: 8px;
-                    color: #000000;
-                }
-                .btn-block:hover {
-                    background-color: #5da4c86a;
-                }
-                a {
-                    display: block;
-                    text-align: center;
-                    margin-top: 20px;
-                    font-size: 1rem;
-                    color: #278dd5;
-                }
-                a:hover {
-                    text-decoration: underline;
-                }
+        .form-control:focus {
+            border-color: #278dd5;
+            box-shadow: 0 0 5px rgba(150, 147, 133, 0.5);
+            background: transparent;
+            color: white;
+        }
+
+        .input-group-text {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-block {
+            padding: 14px;
+            font-size: 1.1rem;
+            background-color: #278dd5;
+            border: none;
+            border-radius: 8px;
+            color: #000000;
+            width: 100%;
+        }
+
+        .btn-block:hover {
+            background-color: #5da4c86a;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #278dd5;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                max-width: 100%;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+                margin-bottom: 20px;
+            }
+
+            .form-group label {
+                font-size: 1rem;
+            }
+
+            .form-control {
+                font-size: 0.95rem;
+                padding: 10px;
+            }
+
+            .input-group-text {
+                font-size: 0.9rem;
+            }
+
+            .btn-block {
+                padding: 12px;
+                font-size: 1rem;
+            }
+
+            a {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 25px 15px;
+                border-radius: 8px;
+            }
+
+            h2 {
+                font-size: 1.3rem;
+                margin-bottom: 15px;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .form-group label {
+                font-size: 0.95rem;
+                margin-bottom: 5px;
+            }
+
+            .form-control {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+
+            .input-group-text {
+                font-size: 0.85rem;
+                padding: 6px 8px;
+            }
+
+            .btn-block {
+                padding: 10px;
+                font-size: 0.95rem;
+            }
+
+            a {
+                font-size: 0.85rem;
+                margin-top: 15px;
+            }
+        }
+
+        @media (max-width: 320px) {
+            .container {
+                padding: 20px 12px;
+            }
+
+            h2 {
+                font-size: 1.1rem;
+                margin-bottom: 12px;
+            }
+
+            .form-control {
+                font-size: 0.85rem;
+                padding: 6px;
+            }
+
+            .btn-block {
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-dark text-white">
     <div class="container">
-        <h2 class="my-4">Register</h2>
+                <h2 class="my-4">Register</h2>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div>
+                            {% for category, msg in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ msg|safe }}
+                                    <button type="button" class="close" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
         <form method="POST">
             <div class="form-group">
                 <label for="email">Email:</label>
@@ -88,7 +228,7 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text">@</span>
                     </div>
-                    <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email" required aria-label="Email">
+                    <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email" value="{{ email or '' }}" required aria-label="Email">
                 </div>
             </div>
             <div class="form-group">
@@ -99,12 +239,23 @@
                     </div>
                     <input type="password" name="password" class="form-control" id="password" placeholder="Enter your password" required aria-label="Password">
                 </div>
+                <small class="form-text text-muted">Password must be 8+ chars, include upper & lower case letters, a number and a special character.</small>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Register</button>
         </form>
-        <a href="{{ url_for('login') }}" class="text-white mt-3" target="blank" >Already have an account? Login here</a>
+        <a href="{{ url_for('login') }}" class="text-white mt-3" target="blank">Already have an account? Login here</a>
     </div>
-
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script>
+      document.addEventListener('click', function(e){
+        var btn = e.target.closest('button.close');
+        if(btn){
+          var alert = btn.parentElement;
+          if(alert) alert.style.display = 'none';
+        }
+      });
+      setTimeout(function(){
+        document.querySelectorAll('.alert').forEach(function(a){ a.style.display = 'none'; });
+      }, 5000);
+    </script>
 </body>
 </html>

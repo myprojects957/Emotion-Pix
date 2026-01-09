@@ -133,6 +133,22 @@ def is_valid_password(password: str) -> bool:
     pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$'
     return re.match(pattern, password) is not None
 
+
+def password_issues(password: str) -> list:
+    """Return a list of human-readable issues for the given password."""
+    issues = []
+    if not password or len(password) < 8:
+        issues.append('At least 8 characters long')
+    if not re.search(r'[a-z]', password):
+        issues.append('Include at least one lowercase letter')
+    if not re.search(r'[A-Z]', password):
+        issues.append('Include at least one uppercase letter')
+    if not re.search(r'\d', password):
+        issues.append('Include at least one digit')
+    if not re.search(r'[^\w\s]', password):
+        issues.append('Include at least one special character (e.g. !@#$%)')
+    return issues
+
 def create_user(email, password):
     users = load_users()
     if email in users:
@@ -172,11 +188,13 @@ def register():
 
         if not is_valid_email(email):
             flash('Invalid email format. Please enter a valid email.', 'danger')
-            return render_template('register.html')
+            return render_template('register.html', email=email)
 
-        if not is_valid_password(password):
-            flash('Password must be at least 8 characters, include uppercase, lowercase, a number and a special character.', 'danger')
-            return render_template('register.html')
+        issues = password_issues(password)
+        if issues:
+            suggestion_html = '<p>Password does not meet the following requirements:</p><ul>' + ''.join(f'<li>{issue}</li>' for issue in issues) + '</ul>'
+            flash(suggestion_html, 'danger')
+            return render_template('register.html', email=email)
 
         response = safe_supabase_sign_up(email, password)
         
@@ -211,10 +229,7 @@ def login():
             flash("Email and password are required!", "danger")
             return render_template('login.html')
 
-        # Enforce password format on login to reduce accidental weak passwords
-        if not is_valid_password(password):
-            flash('Invalid password format. Please ensure it has 8+ chars, upper/lowercase, a number and a special character.', 'danger')
-            return render_template('login.html')
+        # Proceed to authenticate; don't display password requirement details on login
 
         try:
             response = supabase_client.auth.sign_in_with_password({
