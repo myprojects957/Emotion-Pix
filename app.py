@@ -73,8 +73,8 @@ try:
                     supabase_init_error = "Invalid Supabase API key. Please verify your SUPABASE_KEY environment variable in Render dashboard matches your Supabase project's anon/public key."
                 elif "url" in error_msg.lower() or "connection" in error_msg.lower():
                     supabase_init_error = f"Supabase connection error: {error_msg}. Please verify your SUPABASE_URL is correct."
-                elif "proxy" in error_msg.lower() or "unexpected keyword" in error_msg.lower():
-                    supabase_init_error = f"Supabase client initialization error: {error_msg}. Ensure requirements.txt has httpx==0.24.1 and httpcore==0.17.3. This is a known compatibility issue with supabase-py 2.4.0."
+                # elif "proxy" in error_msg.lower() or "unexpected keyword" in error_msg.lower():
+                #     supabase_init_error = f"Supabase client initialization error: {error_msg}. Ensure requirements.txt has httpx==0.24.1 and httpcore==0.17.3. This is a known compatibility issue with supabase-py 2.4.0."
                 else:
                     supabase_init_error = error_msg
                 supabase_client = None
