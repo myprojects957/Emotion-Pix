@@ -59,22 +59,9 @@ try:
                 if not supabase_url or not supabase_key:
                     raise ValueError("SUPABASE_URL and SUPABASE_KEY must both be provided")
                 
-                # Try to create client - handle version compatibility issues
-                try:
-                    supabase_client = supabase.create_client(supabase_url, supabase_key)
-                except TypeError as type_error:
-                    # If there's a TypeError with proxy or other parameters, try alternative initialization
-                    error_str = str(type_error)
-                    if "proxy" in error_str.lower() or "unexpected keyword" in error_str.lower():
-                        # This might be a version compatibility issue with httpx
-                        # Try importing Client directly as fallback
-                        print(f"Warning: Supabase client initialization issue: {error_str}")
-                        print("Attempting alternative initialization method...")
-                        from supabase import Client, create_client
-                        # Try with explicit options to avoid proxy issues
-                        supabase_client = create_client(supabase_url, supabase_key)
-                    else:
-                        raise
+                # Initialize Supabase client
+                # Using create_client with positional arguments (compatible with supabase-py 2.8.0)
+                supabase_client = supabase.create_client(supabase_url, supabase_key)
                 
                 print("Supabase client initialized successfully")
                 print(f"Supabase URL: {supabase_url[:30]}...")  # Show first 30 chars for debugging
