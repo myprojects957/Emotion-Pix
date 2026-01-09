@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 from email_validator import validate_email, EmailNotValidError
-from supabase import SupabaseException
+# from supabase import SupabaseException
 from gotrue.errors import AuthApiError
 import time
 from dotenv import load_dotenv
