@@ -220,9 +220,20 @@ def login():
 
 @app.route('/logout')
 def logout():
-    session.pop('user', None) 
+    # Clear entire session to fully log out the user
+    session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
+
+
+@app.after_request
+def add_no_cache_headers(response):
+    # Prevent caching of responses so that browser back button
+    # doesn't show authenticated pages after logout.
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 emotion_to_genre = {
     "happy": "Comedy",
