@@ -1,35 +1,23 @@
-# Use official Python image
-FROM python:3.11-slim
+FROM python:3.13.4-slim
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set working directory
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libjpeg-dev \
+    zlib1g-dev \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Install system packages required by some Python wheels (Pillow, etc.)
 COPY requirements.txt .
-RUN apt-get update \
-	&& apt-get install -y --no-install-recommends \
-	   build-essential \
-	   libjpeg-dev \
-	   zlib1g-dev \
-	   libfreetype6-dev \
-	   liblcms2-dev \
-	   libwebp-dev \
-	   tcl8.6-dev \
-	   tk8.6-dev \
-	&& rm -rf /var/lib/apt/lists/* \
-	&& python -m pip install --upgrade pip setuptools wheel \
-	&& pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 5000
-
-# Run the app
-CMD ["python", "app.py"]
-
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000"]
