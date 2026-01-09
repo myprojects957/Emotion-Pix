@@ -8,7 +8,7 @@ opencv-python-headless==4.8.1.78
 Pillow==9.5.0
 
 tensorflow==2.15.0
-
+httpx<0.26
 email-validator==2.1.0
 Werkzeug==3.0.1
 supabase==2.4.0
