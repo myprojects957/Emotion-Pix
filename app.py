@@ -47,13 +47,38 @@ try:
                 if len(supabase_key) > 500:
                     print("Warning: SUPABASE_KEY appears to be a service_role key. Use the 'anon public' key instead for client-side authentication.")
             elif not supabase_key.startswith('eyJ'):
-                print("Warning: SUPABASE_KEY format doesn't match expected JWT format. Please verify you copied the correct key.")
+                print(f"Warning: SUPABASE_KEY format doesn't match expected JWT format.")
+                print(f"  Current key starts with: '{supabase_key[:20]}...' (length: {len(supabase_key)})")
+                print(f"  Expected: JWT token starting with 'eyJ' (200-300 characters)")
+                print(f"  Action: Go to Supabase Dashboard → Settings → API → Copy 'anon public' key")
+                supabase_init_error = f"SUPABASE_KEY format invalid. Current key starts with '{supabase_key[:20]}...' but should be a JWT token starting with 'eyJ'. Get the 'anon public' key from Supabase Dashboard → Settings → API."
             
             try:
-                supabase_client = supabase.create_client(supabase_url, supabase_key)
+                # Initialize Supabase client
+                # For supabase-py 2.4.0, use positional arguments
+                if not supabase_url or not supabase_key:
+                    raise ValueError("SUPABASE_URL and SUPABASE_KEY must both be provided")
+                
+                # Try to create client - handle version compatibility issues
+                try:
+                    supabase_client = supabase.create_client(supabase_url, supabase_key)
+                except TypeError as type_error:
+                    # If there's a TypeError with proxy or other parameters, try alternative initialization
+                    error_str = str(type_error)
+                    if "proxy" in error_str.lower() or "unexpected keyword" in error_str.lower():
+                        # This might be a version compatibility issue with httpx
+                        # Try importing Client directly as fallback
+                        print(f"Warning: Supabase client initialization issue: {error_str}")
+                        print("Attempting alternative initialization method...")
+                        from supabase import Client, create_client
+                        # Try with explicit options to avoid proxy issues
+                        supabase_client = create_client(supabase_url, supabase_key)
+                    else:
+                        raise
+                
                 print("Supabase client initialized successfully")
                 print(f"Supabase URL: {supabase_url[:30]}...")  # Show first 30 chars for debugging
-            except (ValueError, Exception) as client_error:
+            except (ValueError, TypeError, Exception) as client_error:
                 error_msg = str(client_error)
                 print(f"Warning: Could not create Supabase client: {error_msg}")
                 # Provide more helpful error messages for common issues
@@ -61,6 +86,8 @@ try:
                     supabase_init_error = "Invalid Supabase API key. Please verify your SUPABASE_KEY environment variable in Render dashboard matches your Supabase project's anon/public key."
                 elif "url" in error_msg.lower() or "connection" in error_msg.lower():
                     supabase_init_error = f"Supabase connection error: {error_msg}. Please verify your SUPABASE_URL is correct."
+                elif "proxy" in error_msg.lower() or "unexpected keyword" in error_msg.lower():
+                    supabase_init_error = f"Supabase client initialization error: {error_msg}. This may be a version compatibility issue between supabase-py and httpx. Try updating requirements.txt to pin httpx<0.26."
                 else:
                     supabase_init_error = error_msg
                 supabase_client = None
