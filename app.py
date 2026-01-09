@@ -47,7 +47,13 @@ try:
             except (ValueError, Exception) as client_error:
                 error_msg = str(client_error)
                 print(f"Warning: Could not create Supabase client: {error_msg}")
-                supabase_init_error = error_msg
+                # Provide more helpful error messages for common issues
+                if "Invalid API key" in error_msg or "invalid" in error_msg.lower() and "key" in error_msg.lower():
+                    supabase_init_error = "Invalid Supabase API key. Please verify your SUPABASE_KEY environment variable in Render dashboard matches your Supabase project's anon/public key."
+                elif "url" in error_msg.lower() or "connection" in error_msg.lower():
+                    supabase_init_error = f"Supabase connection error: {error_msg}. Please verify your SUPABASE_URL is correct."
+                else:
+                    supabase_init_error = error_msg
                 supabase_client = None
         else:
             error_msg = "SUPABASE_URL or SUPABASE_KEY is empty"
@@ -216,9 +222,9 @@ def resend_confirmation():
     if not supabase_client:
         error_msg = "Authentication service is not available."
         if supabase_init_error:
-            error_msg += f" Error: {supabase_init_error}"
+            error_msg += f" {supabase_init_error}"
         else:
-            error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables."
+            error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables in your Render dashboard."
         flash(error_msg, "danger")
         return redirect(url_for('login'))
     
@@ -266,9 +272,9 @@ def safe_supabase_sign_up(email, password):
     if not supabase_client:
         error_msg = "Authentication service is not available."
         if supabase_init_error:
-            error_msg += f" Error: {supabase_init_error}"
+            error_msg += f" {supabase_init_error}"
         else:
-            error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables."
+            error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables in your Render dashboard."
         return {"error": {"message": error_msg}}
     
     retries = 3
@@ -299,9 +305,9 @@ def login():
         if not supabase_client:
             error_msg = "Authentication service is not available."
             if supabase_init_error:
-                error_msg += f" Error: {supabase_init_error}"
+                error_msg += f" {supabase_init_error}"
             else:
-                error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables."
+                error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables in your Render dashboard."
             flash(error_msg, "danger")
             return render_template('login.html')
 
