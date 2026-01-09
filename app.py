@@ -40,6 +40,15 @@ try:
         supabase_key = str(supabase_key).strip()
         
         if supabase_url and supabase_key and len(supabase_url) > 0 and len(supabase_key) > 0:
+            # Basic validation: Check if key looks like a service_role key (should use anon key instead)
+            if supabase_key.startswith('eyJ') and len(supabase_key) > 100:
+                # This looks like a JWT token (anon or service_role key)
+                # Check if it might be service_role (which is longer and shouldn't be used client-side)
+                if len(supabase_key) > 500:
+                    print("Warning: SUPABASE_KEY appears to be a service_role key. Use the 'anon public' key instead for client-side authentication.")
+            elif not supabase_key.startswith('eyJ'):
+                print("Warning: SUPABASE_KEY format doesn't match expected JWT format. Please verify you copied the correct key.")
+            
             try:
                 supabase_client = supabase.create_client(supabase_url, supabase_key)
                 print("Supabase client initialized successfully")
