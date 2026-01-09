@@ -28,10 +28,11 @@ USER_DATA_FILE = 'users.json'
 
 # Initialize Supabase client with error handling
 supabase_client = None
+supabase_init_error = None
 try:
     # Check if config values exist and are not empty
-    supabase_url = os.getenv('SUPABASE_URL')
-    supabase_key = os.getenv('SUPABASE_KEY')
+    supabase_url = getattr(config, 'SUPABASE_URL', None) or os.getenv('SUPABASE_URL')
+    supabase_key = getattr(config, 'SUPABASE_KEY', None) or os.getenv('SUPABASE_KEY')
     
     # Validate that both URL and KEY are present and not empty
     if supabase_url and supabase_key:
@@ -42,16 +43,25 @@ try:
             try:
                 supabase_client = supabase.create_client(supabase_url, supabase_key)
                 print("Supabase client initialized successfully")
+                print(f"Supabase URL: {supabase_url[:30]}...")  # Show first 30 chars for debugging
             except (ValueError, Exception) as client_error:
-                print(f"Warning: Could not create Supabase client: {client_error}")
+                error_msg = str(client_error)
+                print(f"Warning: Could not create Supabase client: {error_msg}")
+                supabase_init_error = error_msg
                 supabase_client = None
         else:
-            print("Warning: SUPABASE_URL or SUPABASE_KEY is empty. Authentication features will be disabled.")
+            error_msg = "SUPABASE_URL or SUPABASE_KEY is empty"
+            print(f"Warning: {error_msg}. Authentication features will be disabled.")
+            supabase_init_error = error_msg
     else:
-        print("Warning: SUPABASE_URL or SUPABASE_KEY not set. Authentication features will be disabled.")
+        error_msg = "SUPABASE_URL or SUPABASE_KEY not set in environment variables"
+        print(f"Warning: {error_msg}. Authentication features will be disabled.")
+        supabase_init_error = error_msg
 except Exception as e:
-    print(f"Warning: Error during Supabase initialization: {e}")
+    error_msg = f"Error during Supabase initialization: {str(e)}"
+    print(f"Warning: {error_msg}")
     print("Authentication features will be disabled.")
+    supabase_init_error = error_msg
     supabase_client = None
 
 # Initialize emotion detection model (using a simple CNN instead of FER)
@@ -204,7 +214,12 @@ def validate_user(email, password):
 @app.route('/resend_confirmation', methods=['POST'])
 def resend_confirmation():
     if not supabase_client:
-        flash("Authentication service is not available. Please contact support.", "danger")
+        error_msg = "Authentication service is not available."
+        if supabase_init_error:
+            error_msg += f" Error: {supabase_init_error}"
+        else:
+            error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables."
+        flash(error_msg, "danger")
         return redirect(url_for('login'))
     
     email = request.form.get('email', '').strip()
@@ -249,7 +264,12 @@ def register():
 
 def safe_supabase_sign_up(email, password):
     if not supabase_client:
-        return {"error": {"message": "Authentication service is not available. Please contact support."}}
+        error_msg = "Authentication service is not available."
+        if supabase_init_error:
+            error_msg += f" Error: {supabase_init_error}"
+        else:
+            error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables."
+        return {"error": {"message": error_msg}}
     
     retries = 3
     for attempt in range(retries):
@@ -277,7 +297,12 @@ def login():
         # Proceed to authenticate; don't display password requirement details on login
 
         if not supabase_client:
-            flash("Authentication service is not available. Please contact support.", "danger")
+            error_msg = "Authentication service is not available."
+            if supabase_init_error:
+                error_msg += f" Error: {supabase_init_error}"
+            else:
+                error_msg += " Please check your SUPABASE_URL and SUPABASE_KEY environment variables."
+            flash(error_msg, "danger")
             return render_template('login.html')
 
         try:
@@ -567,6 +592,17 @@ def home():
         flash("You need to log in first.", "warning")
         return redirect(url_for('login'))
     return render_template('home.html', user=session['user'])
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint to diagnose authentication service status"""
+    status = {
+        'supabase_configured': supabase_client is not None,
+        'supabase_url_set': bool(getattr(config, 'SUPABASE_URL', None) or os.getenv('SUPABASE_URL')),
+        'supabase_key_set': bool(getattr(config, 'SUPABASE_KEY', None) or os.getenv('SUPABASE_KEY')),
+        'init_error': supabase_init_error if supabase_init_error else None
+    }
+    return jsonify(status)
 
 if __name__ == "__main__":
     init_db()
