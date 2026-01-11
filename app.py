@@ -373,7 +373,7 @@ def add_no_cache_headers(response):
 
 emotion_to_genre = {
     "happy": "Comedy",
-    "sadness": "Drama",
+    "sad": "Drama",
     "anger": "Action",
     "surprise": "Adventure",
     "neutral": "Drama",
@@ -425,34 +425,93 @@ if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
 #             return "neutral"
 #     except Exception as e:
 #         print(f"Error detecting emotion: {e}")
-#         return "neutral"  
+#         return "neutral" 
+# ================= EMOTION MAP =================
+EMOTION_MAP = {
+    "anger": "anger",
+    "disgust": "anger",     # merge disgust → anger
+    "fear": "fear",
+    "happy": "happy",
+    "sad": "sadness",
+    "surprise": "surprise",
+    "neutral": "neutral"
+}
+# ==============================================
+
+# def detect_emotion(image_data):
+#     try:
+#         nparr = np.frombuffer(image_data, np.uint8)
+#         img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+
+#         if img is None:
+#             return "neutral"
+
+#         img = cv2.resize(img, (48, 48))
+#         img = img.astype("float32") / 255.0
+#         img = img.reshape(1, 48, 48, 1)
+
+#         if emotion_model is None:
+#             return "neutral"
+
+#         preds = emotion_model.predict(img, verbose=0)
+
+#         emotion_labels = [
+#             "anger", "disgust", "fear",
+#             "happy", "sadness", "surprise", "neutral"
+#         ]
+
+#         return emotion_labels[int(np.argmax(preds))]
+
+#     except Exception as e:
+#         print(f"Emotion detection error: {e}")
+#         return "neutral"
 def detect_emotion(image_data):
     try:
         nparr = np.frombuffer(image_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        if img is None:
+        if frame is None:
             return "neutral"
 
-        img = cv2.resize(img, (48, 48))
-        img = img.astype("float32") / 255.0
-        img = img.reshape(1, 48, 48, 1)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        faces = FACE_CASCADE.detectMultiScale(
+            gray,
+            scaleFactor=1.3,
+            minNeighbors=5
+        )
+
+        # No face detected
+        if len(faces) == 0:
+            return "neutral"
+
+        # Take first detected face
+        (x, y, w, h) = faces[0]
+        face = gray[y:y+h, x:x+w]
+
+        face = cv2.resize(face, (48, 48))
+        face = face.astype("float32") / 255.0
+        face = face.reshape(1, 48, 48, 1)
 
         if emotion_model is None:
             return "neutral"
 
-        preds = emotion_model.predict(img, verbose=0)
+        preds = emotion_model.predict(face, verbose=0)
 
         emotion_labels = [
             "anger", "disgust", "fear",
-            "happy", "sadness", "surprise", "neutral"
+            "happy", "sad", "surprise", "neutral"
         ]
 
-        return emotion_labels[int(np.argmax(preds))]
+        raw_emotion = emotion_labels[int(np.argmax(preds))]
+
+        # ✅ APPLY EMOTION MAP HERE
+        return EMOTION_MAP.get(raw_emotion, "neutral")
 
     except Exception as e:
-        print(f"Emotion detection error: {e}")
+        print("Emotion detection error:", e)
         return "neutral"
+
 
 def get_movie_recommendations(genre):
     cached_movies = get_cached_movies(genre)
