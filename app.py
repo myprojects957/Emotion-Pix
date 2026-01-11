@@ -62,7 +62,7 @@ try:
                 
                 # Initialize Supabase client
                 # Using create_client with positional arguments (compatible with supabase-py 2.8.0)
-                supabase_client = supabase.create_client(supabase_url, supabase_key)
+                supabase_client = create_client(supabase_url, supabase_key)
                 
                 print("Supabase client initialized successfully")
                 print(f"Supabase URL: {supabase_url[:30]}...")  # Show first 30 chars for debugging
