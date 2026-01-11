@@ -12,8 +12,6 @@ import cv2
 import numpy as np
 import sqlite3
 from datetime import datetime, timedelta
-# from tensorflow.keras.models import load_model
-# from tensorflow.keras.preprocessing.image import img_to_array
 from email_validator import validate_email, EmailNotValidError
 # SupabaseException is not available in supabase 2.4.0, using generic Exception instead
 from gotrue.errors import AuthApiError
