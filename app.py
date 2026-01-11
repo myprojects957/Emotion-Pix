@@ -438,6 +438,16 @@ from fer import FER
 
 emotion_detector = FER(mtcnn=True)
 
+EMOTION_MAP = {
+    "angry": "anger",
+    "disgust": "anger",
+    "fear": "fear",
+    "happy": "happy",
+    "sad": "sad",
+    "surprise": "surprise",
+    "neutral": "neutral"
+}
+
 def detect_emotion(image_data):
     try:
         print("DEBUG: detect_emotion called")
@@ -446,40 +456,28 @@ def detect_emotion(image_data):
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
-            print("DEBUG: frame is None")
             return "neutral"
 
-        # FER requires RGB
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = emotion_detector.detect_emotions(rgb)
 
-        results = emotion_detector.detect_emotions(rgb_frame)
         print("DEBUG: FER results =", results)
 
         if not results:
-            print("DEBUG: no face detected by FER")
             return "neutral"
 
         emotions = results[0]["emotions"]
+        raw_emotion = max(emotions, key=emotions.get)
 
-        # Pick strongest emotion
-        emotion = max(emotions, key=emotions.get)
-        print("DEBUG: detected emotion =", emotion)
+        mapped = EMOTION_MAP.get(raw_emotion, "neutral")
+        print("DEBUG: detected emotion =", mapped)
 
-        emotion_map = {
-            "angry": "anger",
-            "disgust": "anger",
-            "fear": "fear",
-            "happy": "happy",
-            "sad": "sad",
-            "surprise": "surprise",
-            "neutral": "neutral"
-        }
-
-        return emotion_map.get(emotion, "neutral")
+        return mapped
 
     except Exception as e:
         print("FER ERROR:", e)
         return "neutral"
+
 
 
 
