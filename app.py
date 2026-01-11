@@ -96,19 +96,26 @@ except Exception as e:
 
 # Initialize emotion detection model (using a simple CNN instead of FER)
 # ================= EMOTION MODEL (LOCAL LOAD) =================
+# ================= EMOTION MODEL LOAD =================
 emotion_model = None
 
 try:
-    model_path = os.path.join(os.getcwd(), "emotion_model.h5")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(BASE_DIR, "emotion_model.h5")
+
+    print("DEBUG: Loading emotion model from:", model_path)
+
     if not os.path.exists(model_path):
-        raise FileNotFoundError("emotion_model.h5 not found in project root")
+        raise FileNotFoundError("emotion_model.h5 not found")
 
     emotion_model = load_model(model_path, compile=False)
-    print("Emotion detection model loaded successfully")
+    print("✅ Emotion detection model loaded successfully")
 
 except Exception as e:
-    print(f"Emotion model load failed: {e}")
+    print("❌ Emotion model load failed:", e)
     emotion_model = None
+# ======================================================
+
 # =============================================================
 
 
@@ -427,90 +434,54 @@ if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
 #         print(f"Error detecting emotion: {e}")
 #         return "neutral" 
 # ================= EMOTION MAP =================
-EMOTION_MAP = {
-    "anger": "anger",
-    "disgust": "anger",     # merge disgust → anger
-    "fear": "fear",
-    "happy": "happy",
-    "sad": "sadness",
-    "surprise": "surprise",
-    "neutral": "neutral"
-}
-# ==============================================
+from fer import FER
 
-# def detect_emotion(image_data):
-#     try:
-#         nparr = np.frombuffer(image_data, np.uint8)
-#         img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+emotion_detector = FER(mtcnn=True)
 
-#         if img is None:
-#             return "neutral"
-
-#         img = cv2.resize(img, (48, 48))
-#         img = img.astype("float32") / 255.0
-#         img = img.reshape(1, 48, 48, 1)
-
-#         if emotion_model is None:
-#             return "neutral"
-
-#         preds = emotion_model.predict(img, verbose=0)
-
-#         emotion_labels = [
-#             "anger", "disgust", "fear",
-#             "happy", "sadness", "surprise", "neutral"
-#         ]
-
-#         return emotion_labels[int(np.argmax(preds))]
-
-#     except Exception as e:
-#         print(f"Emotion detection error: {e}")
-#         return "neutral"
 def detect_emotion(image_data):
     try:
+        print("DEBUG: detect_emotion called")
+
         nparr = np.frombuffer(image_data, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
+            print("DEBUG: frame is None")
             return "neutral"
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # FER requires RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        faces = FACE_CASCADE.detectMultiScale(
-            gray,
-            scaleFactor=1.3,
-            minNeighbors=5
-        )
+        results = emotion_detector.detect_emotions(rgb_frame)
+        print("DEBUG: FER results =", results)
 
-        # No face detected
-        if len(faces) == 0:
+        if not results:
+            print("DEBUG: no face detected by FER")
             return "neutral"
 
-        # Take first detected face
-        (x, y, w, h) = faces[0]
-        face = gray[y:y+h, x:x+w]
+        emotions = results[0]["emotions"]
 
-        face = cv2.resize(face, (48, 48))
-        face = face.astype("float32") / 255.0
-        face = face.reshape(1, 48, 48, 1)
+        # Pick strongest emotion
+        emotion = max(emotions, key=emotions.get)
+        print("DEBUG: detected emotion =", emotion)
 
-        if emotion_model is None:
-            return "neutral"
+        emotion_map = {
+            "angry": "anger",
+            "disgust": "anger",
+            "fear": "fear",
+            "happy": "happy",
+            "sad": "sad",
+            "surprise": "surprise",
+            "neutral": "neutral"
+        }
 
-        preds = emotion_model.predict(face, verbose=0)
-
-        emotion_labels = [
-            "anger", "disgust", "fear",
-            "happy", "sad", "surprise", "neutral"
-        ]
-
-        raw_emotion = emotion_labels[int(np.argmax(preds))]
-
-        # ✅ APPLY EMOTION MAP HERE
-        return EMOTION_MAP.get(raw_emotion, "neutral")
+        return emotion_map.get(emotion, "neutral")
 
     except Exception as e:
-        print("Emotion detection error:", e)
+        print("FER ERROR:", e)
         return "neutral"
+
+
 
 
 def get_movie_recommendations(genre):
