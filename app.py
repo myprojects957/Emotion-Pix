@@ -3,7 +3,8 @@ import re
 import json
 import os
 from flask_session import Session
-import supabase
+# import supabase
+from supabase import create_client
 import config
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
@@ -65,17 +66,19 @@ try:
                 
                 print("Supabase client initialized successfully")
                 print(f"Supabase URL: {supabase_url[:30]}...")  # Show first 30 chars for debugging
-            # except (ValueError, TypeError, Exception) as client_error:
-            #     error_msg = str(client_error)
-            #     print(f"Warning: Could not create Supabase client: {error_msg}")
-            #     # Provide more helpful error messages for common issues
-            #     if "Invalid API key" in error_msg or "invalid" in error_msg.lower() and "key" in error_msg.lower():
-            #         supabase_init_error = "Invalid Supabase API key. Please verify your SUPABASE_KEY environment variable in Render dashboard matches your Supabase project's anon/public key."
-            #     elif "url" in error_msg.lower() or "connection" in error_msg.lower():
-            #         supabase_init_error = f"Supabase connection error: {error_msg}. Please verify your SUPABASE_URL is correct."
-            #     else:
-            #         supabase_init_error = error_msg
-            #     supabase_client = None
+            except (ValueError, TypeError, Exception) as client_error:
+                error_msg = str(client_error)
+                print(f"Warning: Could not create Supabase client: {error_msg}")
+                # Provide more helpful error messages for common issues
+                if "Invalid API key" in error_msg or "invalid" in error_msg.lower() and "key" in error_msg.lower():
+                    supabase_init_error = "Invalid Supabase API key. Please verify your SUPABASE_KEY environment variable in Render dashboard matches your Supabase project's anon/public key."
+                elif "url" in error_msg.lower() or "connection" in error_msg.lower():
+                    supabase_init_error = f"Supabase connection error: {error_msg}. Please verify your SUPABASE_URL is correct."
+                elif "proxy" in error_msg.lower() or "unexpected keyword" in error_msg.lower():
+                    supabase_init_error = f"Supabase client initialization error: {error_msg}. Ensure requirements.txt has httpx==0.24.1 and httpcore==0.17.3. This is a known compatibility issue with supabase-py 2.4.0."
+                else:
+                    supabase_init_error = error_msg
+                supabase_client = None
         else:
             error_msg = "SUPABASE_URL or SUPABASE_KEY is empty"
             print(f"Warning: {error_msg}. Authentication features will be disabled.")
