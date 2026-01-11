@@ -13,7 +13,7 @@ import numpy as np
 import sqlite3
 from datetime import datetime, timedelta
 from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import img_to_array
+# from tensorflow.keras.preprocessing.image import img_to_array
 from email_validator import validate_email, EmailNotValidError
 # SupabaseException is not available in supabase 2.4.0, using generic Exception instead
 from gotrue.errors import AuthApiError
@@ -95,30 +95,22 @@ except Exception as e:
     supabase_client = None
 
 # Initialize emotion detection model (using a simple CNN instead of FER)
+# ================= EMOTION MODEL (LOCAL LOAD) =================
 emotion_model = None
+
 try:
-    # Using pre-trained emotion detection model from TensorFlow
-    import urllib.request
-    model_url = "https://github.com/atulappl/Emotion-detection/raw/master/emotion_model.h5"
-    # Use a writable directory that exists on Render
     model_path = os.path.join(os.getcwd(), "emotion_model.h5")
-    
-    # Download model if not exists (with timeout to prevent blocking)
     if not os.path.exists(model_path):
-        try:
-            urllib.request.urlretrieve(model_url, model_path)
-        except Exception as download_error:
-            print(f"Warning: Could not download emotion model: {download_error}")
-            model_path = None
-    
-    if model_path and os.path.exists(model_path):
-        emotion_model = load_model(model_path)
-        print("Emotion detection model loaded successfully")
-    else:
-        print("Warning: Emotion model file not available. Using fallback emotion detection.")
+        raise FileNotFoundError("emotion_model.h5 not found in project root")
+
+    emotion_model = load_model(model_path, compile=False)
+    print("Emotion detection model loaded successfully")
+
 except Exception as e:
-    print(f"Warning: Could not load emotion model: {e}")
+    print(f"Emotion model load failed: {e}")
     emotion_model = None
+# =============================================================
+
 
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
@@ -394,46 +386,73 @@ RAPIDAPI_HOST = os.getenv('RAPIDAPI_HOST')
 if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
     print("Warning: RAPIDAPI_KEY or RAPIDAPI_HOST not set. Movie recommendations may not work.")
 
+# def detect_emotion(image_data):
+#     try:
+#         nparr = np.frombuffer(image_data, np.uint8)
+#         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+#         if img is None:
+#             return "neutral"
+        
+#         # Convert to grayscale
+#         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+#         # Resize to 48x48 (standard for emotion detection)
+#         gray = cv2.resize(gray, (48, 48))
+#         gray = gray.astype('float') / 255.0
+#         gray = img_to_array(gray)
+#         gray = np.expand_dims(gray, axis=0)
+        
+#         # Use model if available, otherwise return random emotion for testing
+#         if emotion_model is not None:
+#             prediction = emotion_model.predict(gray, verbose=0)
+#             emotion_labels = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
+#             emotion_idx = np.argmax(prediction)
+#             emotion = emotion_labels[emotion_idx]
+            
+#             # Map to our emotion set
+#             emotion_map = {
+#                 'angry': 'anger',
+#                 'disgust': 'anger',
+#                 'fear': 'fear',
+#                 'happy': 'happy',
+#                 'neutral': 'neutral',
+#                 'sad': 'sadness',
+#                 'surprise': 'surprise'
+#             }
+#             return emotion_map.get(emotion, 'neutral')
+#         else:
+#             # Fallback: return neutral if model not available
+#             return "neutral"
+#     except Exception as e:
+#         print(f"Error detecting emotion: {e}")
+#         return "neutral"  
 def detect_emotion(image_data):
     try:
         nparr = np.frombuffer(image_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+
         if img is None:
             return "neutral"
-        
-        # Convert to grayscale
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-        # Resize to 48x48 (standard for emotion detection)
-        gray = cv2.resize(gray, (48, 48))
-        gray = gray.astype('float') / 255.0
-        gray = img_to_array(gray)
-        gray = np.expand_dims(gray, axis=0)
-        
-        # Use model if available, otherwise return random emotion for testing
-        if emotion_model is not None:
-            prediction = emotion_model.predict(gray, verbose=0)
-            emotion_labels = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
-            emotion_idx = np.argmax(prediction)
-            emotion = emotion_labels[emotion_idx]
-            
-            # Map to our emotion set
-            emotion_map = {
-                'angry': 'anger',
-                'disgust': 'anger',
-                'fear': 'fear',
-                'happy': 'happy',
-                'neutral': 'neutral',
-                'sad': 'sadness',
-                'surprise': 'surprise'
-            }
-            return emotion_map.get(emotion, 'neutral')
-        else:
-            # Fallback: return neutral if model not available
+
+        img = cv2.resize(img, (48, 48))
+        img = img.astype("float32") / 255.0
+        img = img.reshape(1, 48, 48, 1)
+
+        if emotion_model is None:
             return "neutral"
+
+        preds = emotion_model.predict(img, verbose=0)
+
+        emotion_labels = [
+            "anger", "disgust", "fear",
+            "happy", "sadness", "surprise", "neutral"
+        ]
+
+        return emotion_labels[int(np.argmax(preds))]
+
     except Exception as e:
-        print(f"Error detecting emotion: {e}")
-        return "neutral"  
+        print(f"Emotion detection error: {e}")
+        return "neutral"
 
 def get_movie_recommendations(genre):
     cached_movies = get_cached_movies(genre)
