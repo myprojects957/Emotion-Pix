@@ -411,13 +411,14 @@ if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
 # ================= EMOTION MAP =================
 emotion_detector = None
 
-try:
-    from fer import FER
-    emotion_detector = FER(mtcnn=True)
-    print("✅ FER initialized successfully")
-except Exception as e:
-    print("❌ FER initialization failed:", e)
-    emotion_detector = None
+if os.environ.get("RENDER") != "true":
+    try:
+        from fer import FER
+        emotion_detector = FER(mtcnn=False)
+        print("FER initialized")
+    except Exception as e:
+        print("FER disabled:", e)
+
 
 
 EMOTION_MAP = {
