@@ -414,7 +414,7 @@ emotion_detector = None
 if os.environ.get("RENDER") != "true":
     try:
         from fer import FER
-        emotion_detector = FER(mtcnn=False)
+        emotion_detector = FER(mtcnn=True)
         print("FER initialized")
     except Exception as e:
         print("FER disabled:", e)
