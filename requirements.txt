@@ -26,3 +26,4 @@ supabase==2.8.1
 email-validator==2.1.0
 Werkzeug==3.0.1
 gunicorn==21.2.0
+
