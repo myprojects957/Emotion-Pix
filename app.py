@@ -408,41 +408,73 @@ if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
 #     except Exception as e:
 #         print(f"Error detecting emotion: {e}")
 #         return "neutral" 
-# ================= EMOTION MAP =================
-from fer import FER
-
-emotion_detector = FER(mtcnn=True)
+# ================= EMOTION DETECTION SETUP =================
+emotion_detector = None
+try:
+    from fer import FER
+    emotion_detector = FER(mtcnn=True)
+    print("FER emotion detector initialized successfully")
+except ImportError as e:
+    print(f"Warning: FER library not available: {e}")
+    print("Emotion detection will return 'neutral' for all images")
+except Exception as e:
+    print(f"Warning: Could not initialize FER: {e}")
+    print("Emotion detection will return 'neutral' for all images")
 
 EMOTION_MAP = {
     "angry": "anger",
     "disgust": "anger",
     "fear": "fear",
     "happy": "happy",
-    "sad": "sad",
+    "sad": "sad",  # Maps to "sad" which emotion_to_genre uses
     "surprise": "surprise",
     "neutral": "neutral"
 }
 
 def detect_emotion(image_data):
     try:
+        # Check if FER is available
+        if emotion_detector is None:
+            print("Warning: FER detector not initialized")
+            return "neutral"
+        
+        # Decode image from bytes
         nparr = np.frombuffer(image_data, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
+            print("Error: Could not decode image")
             return "neutral"
 
+        # Detect emotions using FER
         results = emotion_detector.detect_emotions(frame)
 
-        if not results:
+        if not results or len(results) == 0:
+            print("Warning: No face detected in image")
             return "neutral"
 
+        # Get emotions from first detected face
         emotions = results[0]["emotions"]
+        if not emotions:
+            print("Warning: No emotions detected")
+            return "neutral"
+
+        # Find emotion with highest confidence
         detected = max(emotions, key=emotions.get)
+        print(f"Detected emotion: {detected} with confidence: {emotions[detected]:.2f}")
 
-        return EMOTION_MAP.get(detected, "neutral")
+        # Map to our emotion set
+        mapped_emotion = EMOTION_MAP.get(detected, "neutral")
+        print(f"Mapped to: {mapped_emotion}")
+        return mapped_emotion
 
+    except ImportError as e:
+        print(f"FER Import Error: {e}. Make sure 'fer' and 'mtcnn' are installed.")
+        return "neutral"
     except Exception as e:
-        print("FER ERROR:", e)
+        print(f"FER ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         return "neutral"
 
 

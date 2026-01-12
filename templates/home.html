@@ -30,6 +30,23 @@
             bottom: 20px;
             right: 20px;
             background: #fff;
+                /* Hero image styles */
+                .hero {
+                    width: 100%;
+                    display: flex;
+                    justify-content: center;
+                    margin-top: 80px;
+                    padding: 10px 0 0 0;
+                }
+
+                .hero-img {
+                    width: 60%;
+                    max-width: 500px;
+                    height: auto;
+                    border-radius: 12px;
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+                    background: rgba(255,255,255,0.02);
+                }
             padding: 10px 20px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
@@ -62,6 +79,14 @@
             gap: 15px;
             /* Spacing between Home & Logout */
         }
+                    .hero {
+                        margin-top: 20px;
+                        padding: 4px 0 0 0;
+                    }
+                    .hero-img {
+                        width: 85%;
+                        max-width: 360px;
+                    }
 
         .nav-button {
             font-family: 'Montserrat', sans-serif;
@@ -245,11 +270,174 @@
             .movie-list {
                 grid-template-columns: repeat(3, 1fr);
             }
+            body {
+                padding-top: 60px;
+            }
+            .navbar {
+                height: auto;
+                flex-wrap: wrap;
+            }
+            .nav-links {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .logo {
+                max-width: 100px;
+            }
+            .container {
+                width: 95%;
+                padding: 15px;
+                margin-top: 70px;
+            }
+            .movie-container {
+                width: 95%;
+                padding: 15px;
+            }
+            .search-bar {
+                width: 95%;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .search-bar input {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+            .search-bar button {
+                width: 100%;
+                font-size: 14px;
+            }
+            #video {
+                max-width: 100%;
+                height: auto;
+            }
+            button {
+                padding: 10px 15px;
+                font-size: 14px;
+                margin: 8px;
+            }
+            #capture-btn, #camera-toggle-btn {
+                font-size: 14px;
+                padding: 10px 15px;
+                width: auto;
+            }
+            .toggle-container {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
         }
 
         @media (max-width: 480px) {
             .movie-list {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                padding: 5px;
+            }
+            body {
+                padding-top: 50px;
+            }
+            .navbar {
+                height: auto;
+                padding: 8px 10px;
+                flex-wrap: wrap;
+            }
+            .nav-links {
+                flex-direction: column;
+                gap: 5px;
+                width: 100%;
+            }
+            .nav-button, .logout-button {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            .logo {
+                max-width: 80px;
+            }
+            .container {
+                width: 98%;
+                padding: 12px;
+                margin-top: 60px;
+                margin-bottom: 20px;
+            }
+            .container h2 {
+                font-size: 18px;
+            }
+            .movie-container {
+                width: 98%;
+                padding: 10px;
+                margin: 15px auto;
+            }
+            .movie-container h2 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            .search-bar {
+                width: 98%;
+                flex-direction: column;
+                gap: 8px;
+                margin: 10px auto;
+            }
+            .search-bar input {
+                font-size: 13px;
+                padding: 8px 10px;
+                border-radius: 20px;
+            }
+            .search-bar button {
+                width: 100%;
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+            #video {
+                max-width: 100%;
+                height: auto;
+            }
+            button {
+                padding: 8px 12px;
+                font-size: 12px;
+                margin: 5px;
+                width: calc(100% - 10px);
+            }
+            #capture-btn, #camera-toggle-btn {
+                font-size: 12px;
+                padding: 8px 12px;
+                width: calc(100% - 10px);
+            }
+            .toggle-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .camera-toggle-label {
+                font-size: 11px;
+            }
+            .camera-toggle-switch {
+                width: 45px;
+                height: 22px;
+            }
+            #emotionPopup {
+                bottom: 10px;
+                right: 10px;
+                font-size: 12px;
+                padding: 8px 15px;
+            }
+        }
+
+        @media (max-width: 320px) {
+            body {
+                padding-top: 45px;
+            }
+            .container, .movie-container {
+                width: 100%;
+                padding: 10px;
+            }
+            .container h2, .movie-container h2 {
+                font-size: 14px;
+            }
+            .search-bar input, button {
+                font-size: 12px;
+            }
+            .movie-list {
+                grid-template-columns: 1fr;
+                gap: 8px;
             }
         }
 

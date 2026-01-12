@@ -29,14 +29,24 @@ git push origin main
 
 Click "Advanced" and add these environment variables:
 
+**⚠️ IMPORTANT**: Replace the example values below with your actual credentials!
+
 ```
-SUPABASE_URL=https://kqhrkboqoxegibmbutun.supabase.co
-SUPABASE_KEY=sb_publishable_1yGbsSNMrQkP10qSOMCaUQ_MdVoMet1
-SECRET_KEY=30cb9ec6a2ac4e084b6353b063b2648a
-FLASK_SECRET_KEY=30cb9ec6a2ac4e084b6353b063b2648a
-RAPIDAPI_KEY=2040bb51dfmsh0b3d86e3a9ba373p138437jsn1c7d14412fe9
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_KEY=your-anon-public-key-here
+SECRET_KEY=your-secret-key-here
+FLASK_SECRET_KEY=your-flask-secret-key-here
+RAPIDAPI_KEY=your-rapidapi-key-here
 RAPIDAPI_HOST=imdb236.p.rapidapi.com
 ```
+
+**How to get your Supabase credentials:**
+1. Go to https://supabase.com/dashboard
+2. Select your project (or create a new one)
+3. Go to **Settings** → **API**
+4. Copy the **Project URL** → This is your `SUPABASE_URL`
+5. Copy the **anon public** key → This is your `SUPABASE_KEY`
+   - ⚠️ Make sure you use the **anon/public** key, NOT the service_role key!
 
 ### Step 4: Deploy
 
@@ -96,6 +106,8 @@ Common successful messages:
 | `Address already in use` | Render manages ports automatically, shouldn't happen |
 | `Timeout during build` | May indicate package download issue, try rebuilding |
 | `File not found .env` | .env is local-only, environment variables set in Render dashboard |
+| `Invalid API key` or `Authentication service is not available` | **Supabase API key is invalid**: Go to Supabase dashboard → Settings → API → Copy the **anon public** key (not service_role) → Update SUPABASE_KEY in Render dashboard → Redeploy |
+| `Could not create Supabase client` | Verify SUPABASE_URL and SUPABASE_KEY are both set correctly in Render environment variables |
 
 ---
 
