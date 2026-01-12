@@ -409,72 +409,100 @@ if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
 #         print(f"Error detecting emotion: {e}")
 #         return "neutral" 
 # ================= EMOTION DETECTION SETUP =================
+# ==============================
+# GLOBAL FER INITIALIZATION
+# ==============================
 emotion_detector = None
+
 try:
     from fer import FER
-    emotion_detector = FER(mtcnn=True)
-    print("FER emotion detector initialized successfully")
-except ImportError as e:
-    print(f"Warning: FER library not available: {e}")
-    print("Emotion detection will return 'neutral' for all images")
-except Exception as e:
-    print(f"Warning: Could not initialize FER: {e}")
-    print("Emotion detection will return 'neutral' for all images")
 
+    # IMPORTANT:
+    # - mtcnn=False → saves huge RAM (Render-safe)
+    # - Initialize ONCE globally
+    emotion_detector = FER(mtcnn=False)
+    print("✅ FER emotion detector initialized (mtcnn=False)")
+
+except ImportError as e:
+    print(f"⚠️ FER not installed: {e}")
+    print("⚠️ Emotion detection fallback: neutral")
+
+except Exception as e:
+    print(f"⚠️ FER initialization failed: {e}")
+    print("⚠️ Emotion detection fallback: neutral")
+
+
+# ==============================
+# EMOTION NORMALIZATION MAP
+# ==============================
 EMOTION_MAP = {
     "angry": "anger",
     "disgust": "anger",
     "fear": "fear",
     "happy": "happy",
-    "sad": "sad",  # Maps to "sad" which emotion_to_genre uses
+    "sad": "sad",
     "surprise": "surprise",
     "neutral": "neutral"
 }
 
-def detect_emotion(image_data):
+
+# ==============================
+# SAFE EMOTION DETECTION FUNCTION
+# ==============================
+def detect_emotion(image_data: bytes) -> str:
+    """
+    Detects emotion from raw image bytes.
+    Always returns a valid emotion string.
+    Never crashes the app.
+    """
+
+    # --- FER not available ---
+    if emotion_detector is None:
+        print("⚠️ FER detector unavailable → returning neutral")
+        return "neutral"
+
     try:
-        # Check if FER is available
-        if emotion_detector is None:
-            print("Warning: FER detector not initialized")
-            return "neutral"
-        
-        # Decode image from bytes
+        # Decode image safely
         nparr = np.frombuffer(image_data, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
-            print("Error: Could not decode image")
+            print("⚠️ Image decode failed → neutral")
             return "neutral"
 
-        # Detect emotions using FER
+        # Reduce image size → less RAM + faster inference
+        frame = cv2.resize(frame, (640, 480))
+
+        # Convert BGR → RGB (FER expects RGB)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Run FER
         results = emotion_detector.detect_emotions(frame)
 
-        if not results or len(results) == 0:
-            print("Warning: No face detected in image")
+        if not results:
+            print("⚠️ No face detected → neutral")
             return "neutral"
 
-        # Get emotions from first detected face
-        emotions = results[0]["emotions"]
+        emotions = results[0].get("emotions", {})
         if not emotions:
-            print("Warning: No emotions detected")
+            print("⚠️ Empty emotion result → neutral")
             return "neutral"
 
-        # Find emotion with highest confidence
+        # Pick highest confidence emotion
         detected = max(emotions, key=emotions.get)
-        print(f"Detected emotion: {detected} with confidence: {emotions[detected]:.2f}")
+        confidence = emotions[detected]
 
-        # Map to our emotion set
         mapped_emotion = EMOTION_MAP.get(detected, "neutral")
-        print(f"Mapped to: {mapped_emotion}")
+
+        print(
+            f"🎯 Emotion detected: {detected} "
+            f"(confidence={confidence:.2f}) → mapped={mapped_emotion}"
+        )
+
         return mapped_emotion
 
-    except ImportError as e:
-        print(f"FER Import Error: {e}. Make sure 'fer' and 'mtcnn' are installed.")
-        return "neutral"
     except Exception as e:
-        print(f"FER ERROR: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Emotion detection error: {e}")
         return "neutral"
 
 
