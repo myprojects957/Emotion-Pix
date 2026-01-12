@@ -408,33 +408,11 @@ if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
 #     except Exception as e:
 #         print(f"Error detecting emotion: {e}")
 #         return "neutral" 
-# ================= EMOTION DETECTION SETUP =================
-# ==============================
-# GLOBAL FER INITIALIZATION
-# ==============================
-emotion_detector = None
+# ================= EMOTION MAP =================
+from fer import FER
 
-try:
-    from fer import FER
+emotion_detector = FER(mtcnn=True)
 
-    # IMPORTANT:
-    # - mtcnn=False → saves huge RAM (Render-safe)
-    # - Initialize ONCE globally
-    emotion_detector = FER(mtcnn=False)
-    print("✅ FER emotion detector initialized (mtcnn=False)")
-
-except ImportError as e:
-    print(f"⚠️ FER not installed: {e}")
-    print("⚠️ Emotion detection fallback: neutral")
-
-except Exception as e:
-    print(f"⚠️ FER initialization failed: {e}")
-    print("⚠️ Emotion detection fallback: neutral")
-
-
-# ==============================
-# EMOTION NORMALIZATION MAP
-# ==============================
 EMOTION_MAP = {
     "angry": "anger",
     "disgust": "anger",
@@ -445,64 +423,26 @@ EMOTION_MAP = {
     "neutral": "neutral"
 }
 
-
-# ==============================
-# SAFE EMOTION DETECTION FUNCTION
-# ==============================
-def detect_emotion(image_data: bytes) -> str:
-    """
-    Detects emotion from raw image bytes.
-    Always returns a valid emotion string.
-    Never crashes the app.
-    """
-
-    # --- FER not available ---
-    if emotion_detector is None:
-        print("⚠️ FER detector unavailable → returning neutral")
-        return "neutral"
-
+def detect_emotion(image_data):
     try:
-        # Decode image safely
         nparr = np.frombuffer(image_data, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
-            print("⚠️ Image decode failed → neutral")
             return "neutral"
 
-        # Reduce image size → less RAM + faster inference
-        frame = cv2.resize(frame, (640, 480))
-
-        # Convert BGR → RGB (FER expects RGB)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # Run FER
         results = emotion_detector.detect_emotions(frame)
 
         if not results:
-            print("⚠️ No face detected → neutral")
             return "neutral"
 
-        emotions = results[0].get("emotions", {})
-        if not emotions:
-            print("⚠️ Empty emotion result → neutral")
-            return "neutral"
-
-        # Pick highest confidence emotion
+        emotions = results[0]["emotions"]
         detected = max(emotions, key=emotions.get)
-        confidence = emotions[detected]
 
-        mapped_emotion = EMOTION_MAP.get(detected, "neutral")
-
-        print(
-            f"🎯 Emotion detected: {detected} "
-            f"(confidence={confidence:.2f}) → mapped={mapped_emotion}"
-        )
-
-        return mapped_emotion
+        return EMOTION_MAP.get(detected, "neutral")
 
     except Exception as e:
-        print(f"❌ Emotion detection error: {e}")
+        print("FER ERROR:", e)
         return "neutral"
 
 
@@ -709,8 +649,9 @@ def health_check():
     }
     return jsonify(status)
 
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=10000, debug=False) 
     
