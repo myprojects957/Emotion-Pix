@@ -19,7 +19,7 @@ import time
 from dotenv import load_dotenv
 
 load_dotenv()
-
+os.environ["MPLCONFIGDIR"] = "/tmp/matplotlib"
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
 
@@ -448,7 +448,7 @@ EMOTION_MAP = {
 
 def detect_emotion(image_data):
     try:
-        print("DEBUG: detect_emotion called")
+        detector = get_emotion_detector()
 
         nparr = np.frombuffer(image_data, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -456,21 +456,13 @@ def detect_emotion(image_data):
         if frame is None:
             return "neutral"
 
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = emotion_detector.detect_emotions(rgb)
+        result = detector.detect_emotions(frame)
 
-        print("DEBUG: FER results =", results)
-
-        if not results:
+        if not result:
             return "neutral"
 
-        emotions = results[0]["emotions"]
-        raw_emotion = max(emotions, key=emotions.get)
-
-        mapped = EMOTION_MAP.get(raw_emotion, "neutral")
-        print("DEBUG: detected emotion =", mapped)
-
-        return mapped
+        emotions = result[0]["emotions"]
+        return max(emotions, key=emotions.get)
 
     except Exception as e:
         print("FER ERROR:", e)
