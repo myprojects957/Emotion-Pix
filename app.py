@@ -357,9 +357,9 @@ emotion_to_genre = {
     "happy": "Comedy",
     "sad": "Drama",
     "anger": "Action",
+    "fear": "Horror",
     "surprise": "Adventure",
-    "neutral": "Drama",
-    "fear": "Horror"
+    "neutral": "Drama"
 }
 
 RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY')
@@ -409,9 +409,16 @@ if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
 #         print(f"Error detecting emotion: {e}")
 #         return "neutral" 
 # ================= EMOTION MAP =================
-from fer import FER
+emotion_detector = None
 
-emotion_detector = FER(mtcnn=True)
+try:
+    from fer import FER
+    emotion_detector = FER(mtcnn=True)
+    print("✅ FER initialized successfully")
+except Exception as e:
+    print("❌ FER initialization failed:", e)
+    emotion_detector = None
+
 
 EMOTION_MAP = {
     "angry": "anger",
@@ -424,6 +431,9 @@ EMOTION_MAP = {
 }
 
 def detect_emotion(image_data):
+    if emotion_detector is None:
+        return "neutral"
+
     try:
         nparr = np.frombuffer(image_data, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -432,7 +442,6 @@ def detect_emotion(image_data):
             return "neutral"
 
         results = emotion_detector.detect_emotions(frame)
-
         if not results:
             return "neutral"
 
@@ -481,7 +490,9 @@ def get_movie_recommendations(genre):
     }
 
     try:
-        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response = requests.get(url, headers=headers, params=params, timeout=5)
+        print("RAPIDAPI STATUS:", response.status_code)
+
         response.raise_for_status()
         movies = response.json().get('results', [])
         store_cached_movies(genre, movies.copy())
@@ -590,7 +601,9 @@ def search_movie():
     }
 
     try:
-        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response = requests.get(url, headers=headers, params=params, timeout=5)
+        print("RAPIDAPI STATUS:", response.status_code)
+
         response.raise_for_status()
         data = response.json()
     except requests.exceptions.RequestException as e:
@@ -653,5 +666,5 @@ init_db()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=10000, debug=False) 
+    app.run(host="0.0.0.0", port=port, debug=False) 
     
