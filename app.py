@@ -92,29 +92,6 @@ except Exception as e:
     supabase_init_error = error_msg
     supabase_client = None
 
-# Initialize emotion detection model (using a simple CNN instead of FER)
-# ================= EMOTION MODEL (LOCAL LOAD) =================
-# ================= EMOTION MODEL LOAD =================
-emotion_model = None
-
-try:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(BASE_DIR, "emotion_model.h5")
-
-    print("DEBUG: Loading emotion model from:", model_path)
-
-    if not os.path.exists(model_path):
-        raise FileNotFoundError("emotion_model.h5 not found")
-
-    emotion_model = load_model(model_path, compile=False)
-    print("✅ Emotion detection model loaded successfully")
-
-except Exception as e:
-    print("❌ Emotion model load failed:", e)
-    emotion_model = None
-# ======================================================
-
-# =============================================================
 
 
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -448,25 +425,26 @@ EMOTION_MAP = {
 
 def detect_emotion(image_data):
     try:
-        detector = get_emotion_detector()
-
         nparr = np.frombuffer(image_data, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if frame is None:
             return "neutral"
 
-        result = detector.detect_emotions(frame)
+        results = emotion_detector.detect_emotions(frame)
 
-        if not result:
+        if not results:
             return "neutral"
 
-        emotions = result[0]["emotions"]
-        return max(emotions, key=emotions.get)
+        emotions = results[0]["emotions"]
+        detected = max(emotions, key=emotions.get)
+
+        return EMOTION_MAP.get(detected, "neutral")
 
     except Exception as e:
         print("FER ERROR:", e)
         return "neutral"
+
 
 
 
