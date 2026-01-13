@@ -5,6 +5,7 @@ gotrue
 python-dotenv
 opencv-python-headless
 numpy<2
+pandas==2.2.3
 requests
 email-validator
 gunicorn
