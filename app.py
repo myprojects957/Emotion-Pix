@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 import re
 import json
+import pandas as pd 
 import os
 from flask_session import Session
 # import supabase
