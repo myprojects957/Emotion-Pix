@@ -608,6 +608,26 @@ def search_movie():
 
     return jsonify({'movies': movies})
 
+@app.route("/auth/callback")
+def auth_callback():
+    """
+    Handles Supabase email confirmation redirect
+    """
+    error = request.args.get("error")
+    error_description = request.args.get("error_description")
+
+    if error:
+        return render_template(
+            "auth_result.html",
+            success=False,
+            message=error_description or "Verification failed"
+        )
+
+    return render_template(
+        "auth_result.html",
+        success=True,
+        message="Your email has been verified successfully 🎉"
+    )
 
 @app.route('/')
 def home_check():
