@@ -1,28 +1,11 @@
-setuptools>=67.0.0
-wheel>=0.42.0
-
-Flask==3.0.0
-Flask-Session==0.5.0
-python-dotenv==1.0.0
-requests==2.31.0
-
-numpy==1.26.4
-opencv-python-headless==4.8.1.78
-Pillow==9.5.0
-
-# ===== FER STACK (CPU ONLY) =====
-tensorflow==2.15.0
-fer==22.5.1
-mtcnn==0.1.1
-moviepy==1.0.3
-
-torch==2.0.1+cpu
-torchvision==0.15.2+cpu
---extra-index-url https://download.pytorch.org/whl/cpu
-
-# ===== Backend =====
-httpx==0.27.0
-supabase==2.8.1
-email-validator==2.1.0
-Werkzeug==3.0.1
-gunicorn==21.2.0
+flask
+flask-session
+supabase
+gotrue
+python-dotenv
+opencv-python-headless
+numpy<2
+pandas==2.2.3
+requests
+email-validator
+gunicorn
