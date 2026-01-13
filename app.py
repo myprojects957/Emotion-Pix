@@ -362,13 +362,12 @@ EMOTION_MAP = {
 }
 emotion_detector = None
 
-try:
-    from fer import FER
-    emotion_detector = FER(mtcnn=False)
-    print("✅ FER initialized successfully")
-except Exception as e:
-    print("❌ FER initialization failed:", e)
-    emotion_detector = None
+def get_emotion_detector():
+    global emotion_detector
+    if emotion_detector is None:
+        from fer import FER
+        emotion_detector = FER(mtcnn=True)
+    return emotion_detector
 
 def choose_emotion_from_scores(emotions: dict):
     MIN_CONFIDENCE = 0.35
