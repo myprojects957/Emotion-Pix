@@ -9,3 +9,8 @@ pandas==2.2.3
 requests
 email-validator
 gunicorn
+
+fer==22.4.0
+tensorflow-cpu==2.15.0
+mtcnn==1.0.0
+matplotlib==3.10.8
