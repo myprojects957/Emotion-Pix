@@ -24,25 +24,17 @@ app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
 
 USER_DATA_FILE = 'users.json'
-
-# Initialize Supabase client with error handling
 supabase_client = None
 supabase_init_error = None
 try:
-    # Check if config values exist and are not empty
     supabase_url = getattr(config, 'SUPABASE_URL', None) or os.getenv('SUPABASE_URL')
     supabase_key = getattr(config, 'SUPABASE_KEY', None) or os.getenv('SUPABASE_KEY')
-    
-    # Validate that both URL and KEY are present and not empty
     if supabase_url and supabase_key:
         supabase_url = str(supabase_url).strip()
         supabase_key = str(supabase_key).strip()
         
         if supabase_url and supabase_key and len(supabase_url) > 0 and len(supabase_key) > 0:
-            # Basic validation: Check if key looks like a service_role key (should use anon key instead)
             if supabase_key.startswith('eyJ') and len(supabase_key) > 100:
-                # This looks like a JWT token (anon or service_role key)
-                # Check if it might be service_role (which is longer and shouldn't be used client-side)
                 if len(supabase_key) > 500:
                     print("Warning: SUPABASE_KEY appears to be a service_role key. Use the 'anon public' key instead for client-side authentication.")
             elif not supabase_key.startswith('eyJ'):
@@ -53,17 +45,12 @@ try:
                 supabase_init_error = f"SUPABASE_KEY format invalid. Current key starts with '{supabase_key[:20]}...' but should be a JWT token starting with 'eyJ'. Get the 'anon public' key from Supabase Dashboard → Settings → API."
             
             try:
-                # Initialize Supabase client
-                # For supabase-py 2.4.0, use positional arguments
                 if not supabase_url or not supabase_key:
                     raise ValueError("SUPABASE_URL and SUPABASE_KEY must both be provided")
-                
-                # Initialize Supabase client
-                # Using create_client with positional arguments (compatible with supabase-py 2.8.0)
                 supabase_client = create_client(supabase_url, supabase_key)
                 
                 print("Supabase client initialized successfully")
-                print(f"Supabase URL: {supabase_url[:30]}...")  # Show first 30 chars for debugging
+                print(f"Supabase URL: {supabase_url[:30]}...")
             except (ValueError, TypeError, Exception) as client_error:
                 error_msg = str(client_error)
                 print(f"Warning: Could not create Supabase client: {error_msg}")
@@ -297,9 +284,6 @@ def login():
         if not email or not password:
             flash("Email and password are required!", "danger")
             return render_template('login.html')
-
-        # Proceed to authenticate; don't display password requirement details on login
-
         if not supabase_client:
             error_msg = "Authentication service is not available."
             if supabase_init_error:
@@ -338,7 +322,6 @@ def login():
 
 @app.route('/logout')
 def logout():
-    # Clear entire session to fully log out the user
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
@@ -346,8 +329,6 @@ def logout():
 
 @app.after_request
 def add_no_cache_headers(response):
-    # Prevent caching of responses so that browser back button
-    # doesn't show authenticated pages after logout.
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
@@ -368,58 +349,6 @@ RAPIDAPI_HOST = os.getenv('RAPIDAPI_HOST')
 if not RAPIDAPI_KEY or not RAPIDAPI_HOST:
     print("Warning: RAPIDAPI_KEY or RAPIDAPI_HOST not set. Movie recommendations may not work.")
 
-# def detect_emotion(image_data):
-#     try:
-#         nparr = np.frombuffer(image_data, np.uint8)
-#         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-#         if img is None:
-#             return "neutral"
-        
-#         # Convert to grayscale
-#         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-#         # Resize to 48x48 (standard for emotion detection)
-#         gray = cv2.resize(gray, (48, 48))
-#         gray = gray.astype('float') / 255.0
-#         gray = img_to_array(gray)
-#         gray = np.expand_dims(gray, axis=0)
-        
-#         # Use model if available, otherwise return random emotion for testing
-#         if emotion_model is not None:
-#             prediction = emotion_model.predict(gray, verbose=0)
-#             emotion_labels = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
-#             emotion_idx = np.argmax(prediction)
-#             emotion = emotion_labels[emotion_idx]
-            
-#             # Map to our emotion set
-#             emotion_map = {
-#                 'angry': 'anger',
-#                 'disgust': 'anger',
-#                 'fear': 'fear',
-#                 'happy': 'happy',
-#                 'neutral': 'neutral',
-#                 'sad': 'sadness',
-#                 'surprise': 'surprise'
-#             }
-#             return emotion_map.get(emotion, 'neutral')
-#         else:
-#             # Fallback: return neutral if model not available
-#             return "neutral"
-#     except Exception as e:
-#         print(f"Error detecting emotion: {e}")
-#         return "neutral" 
-# ================= EMOTION MAP =================
-emotion_detector = None
-
-if os.environ.get("RENDER") != "true":
-    try:
-        from fer import FER
-        emotion_detector = FER(mtcnn=True)
-        print("FER initialized")
-    except Exception as e:
-        print("FER disabled:", e)
-
-
 
 EMOTION_MAP = {
     "angry": "anger",
@@ -430,6 +359,38 @@ EMOTION_MAP = {
     "surprise": "surprise",
     "neutral": "neutral"
 }
+emotion_detector = None
+
+try:
+    from fer import FER
+    emotion_detector = FER(mtcnn=False)
+    print("✅ FER initialized successfully")
+except Exception as e:
+    print("❌ FER initialization failed:", e)
+    emotion_detector = None
+
+def choose_emotion_from_scores(emotions: dict):
+    MIN_CONFIDENCE = 0.35
+    NEUTRAL_THRESHOLD = 0.60
+    DELTA = 0.15
+
+    sorted_emotions = sorted(
+        emotions.items(), key=lambda x: x[1], reverse=True
+    )
+
+    top_emotion, top_score = sorted_emotions[0]
+    second_emotion, second_score = sorted_emotions[1]
+
+    # Neutral suppression
+    if top_emotion == "neutral" and top_score >= NEUTRAL_THRESHOLD:
+        if second_score >= top_score - DELTA:
+            return second_emotion, round(second_score, 2)
+
+    if top_score < MIN_CONFIDENCE:
+        return "neutral", round(top_score, 2)
+
+    return top_emotion, round(top_score, 2)
+
 
 def detect_emotion(image_data):
     if emotion_detector is None:
@@ -442,22 +403,25 @@ def detect_emotion(image_data):
         if frame is None:
             return "neutral"
 
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.resize(frame, (640, 480))
+
         results = emotion_detector.detect_emotions(frame)
+
         if not results:
             return "neutral"
 
         emotions = results[0]["emotions"]
-        detected = max(emotions, key=emotions.get)
+        final_emotion, confidence = choose_emotion_from_scores(emotions)
 
-        return EMOTION_MAP.get(detected, "neutral")
+        print("🎯 Emotion scores:", results)
+        print("🎯 Selected emotion:", final_emotion, confidence)
+
+        return EMOTION_MAP.get(final_emotion, "neutral")
 
     except Exception as e:
-        print("FER ERROR:", e)
+        print("❌ FER ERROR:", e)
         return "neutral"
-
-
-
-
 
 
 def get_movie_recommendations(genre):
@@ -662,9 +626,7 @@ def health_check():
         'init_error': supabase_init_error if supabase_init_error else None
     }
     return jsonify(status)
-
 init_db()
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False) 
